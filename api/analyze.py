@@ -23,11 +23,15 @@ if ROOT not in sys.path:
 # tries to load .pyi stub files that are absent in the vendored bundle:
 #   "Cannot load imports from non-existent stub /var/task/_vendor/skimage/__init__.pyi"
 #
-# Fix: register our scipy/numpy/opencv shim as 'skimage' in sys.modules *before*
-# any pipeline step module is imported, so their `from skimage import ...` calls
-# resolve to the shim instead of the broken package.
-from api.skimage_shim import filters as _sk_filters, exposure as _sk_exposure
-from api.skimage_shim import morphology as _sk_morphology, measure as _sk_measure
+# Fix: load the shim that lives next to this file (api/skimage_shim.py) and
+# register it in sys.modules under 'skimage' *before* any pipeline step module
+# is imported, so their `from skimage import ...` calls resolve to the shim.
+_API_DIR = os.path.dirname(os.path.abspath(__file__))
+if _API_DIR not in sys.path:
+    sys.path.insert(0, _API_DIR)
+
+from skimage_shim import filters as _sk_filters, exposure as _sk_exposure  # noqa: E402
+from skimage_shim import morphology as _sk_morphology, measure as _sk_measure  # noqa: E402
 import types as _types
 
 def _make_skimage_pkg():

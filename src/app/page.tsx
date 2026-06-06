@@ -100,7 +100,19 @@ export default function HomePage() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "/api/analyze";
     const apiPromise = fetch(apiUrl, { method: "POST", body: formData })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          // Server returned HTML/plain-text (e.g. Vercel 500 page or Python traceback)
+          const snippet = text.replace(/<[^>]+>/g, " ").trim().slice(0, 300);
+          return {
+            status: "error",
+            error: `Server error (HTTP ${r.status}): ${snippet || "empty response"}`,
+          };
+        }
+      })
       .catch((err) => ({ status: "error", error: String(err) }));
 
     // Animated progress while waiting
